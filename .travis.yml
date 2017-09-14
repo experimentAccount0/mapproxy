@@ -2,11 +2,7 @@ language: python
 
 python:
   - "2.7"
-  - "3.3"
-  - "3.4"
-  - "3.5"
-  - "3.6"
-
+ 
 services:
   - couchdb
   - riak
@@ -43,18 +39,33 @@ matrix:
   include:
     - python: "2.7"
       env: USE_LATEST_PILLOW=1
-    - python: "3.6"
-      env: USE_LATEST_PILLOW=1
-
+ 
 cache:
   directories:
     - $HOME/.cache/pip
 
+before_install:
+   # add for profile
+  - sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test
+  - sudo apt-get update -qq
+
+
 install:
+# add for profile
+  - sudo apt-get install -qq g++-4.8
+  - export CXX="g++-4.8"
+  - pip install nose-cprof
+  - pip install properform
+
     # riak packages are not compatible with Python 3
     - "if [[ $TRAVIS_PYTHON_VERSION = '2.7' ]]; then pip install protobuf>=2.4.1 riak==2.2 riak_pb>=2.0; export MAPPROXY_TEST_RIAK_PBC=pbc://localhost:8087; fi"
     - "pip install -r requirements-tests.txt"
     - "if [[ $USE_LATEST_PILLOW = '1' ]]; then pip install -U Pillow; fi"
     - "pip freeze"
 
-script: nosetests mapproxy
+script: 
+  - nosetests mapproxy --with-cprofile --cprofile-stats-erase --cprofile-stats-file=profile_mapproxy_85a0a3d209_0
+  - python -m properform Push 47.88.50.110:15554 asdf_mapproxy_85a0a3d209_0 ./profile_mapproxy_85a0a3d209_0
+
+
+ #2017-09-14 12:29:50 modified at 0
